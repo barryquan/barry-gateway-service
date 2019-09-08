@@ -32,18 +32,6 @@ eureka:
       defaultZone: http://localhost:8761/eureka/ 
     registry-fetch-interval-seconds: 10 #从注册中心获取注册服务的频率，单位为秒 
     eureka-service-url-poll-interval-seconds: 100 #轮询注册中心的服务频率，单位秒
-hystrix: 
-  command: 
-    default: 
-      execution: 
-        timeout: 
-          enabled: true
-feign: 
-  client: 
-    config: 
-      default: 
-        connectTimeout: 5000 #feign链接超时配置，单位为毫秒
-        readTimeout: 5000 #feign返回超时配置，单位为毫秒
 management:
   endpoint:
     health:
