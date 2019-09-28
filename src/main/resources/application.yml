@@ -42,3 +42,6 @@ management:
     web:
       exposure: 
         include: "*"
+use: 
+  format: 
+    response: false
