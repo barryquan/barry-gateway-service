@@ -1,11 +1,10 @@
-package com.github.barry.xss;
+package com.github.barry.filter;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -29,13 +28,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /***
- * 网关统一过滤XSS
+ * <b>请求参数在网关统一过滤XSS、SQL攻击<br>
+ * <b>如果不需要使用，把{@link Component}注释掉即可<br>
+ * <b>过滤分为请求参数在url上的过滤和请求体中的过滤<br>
  * 
  * @author barry
  * @since 2019年8月1日
  */
 @Component
-public class XssFilter implements GlobalFilter, Ordered {
+public class RequestFilter implements GlobalFilter, Ordered {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -79,7 +80,7 @@ public class XssFilter implements GlobalFilter, Ordered {
         String originalQuery = uri.getQuery();
         log.debug("获取到的GET请求的参数为={}", originalQuery);
         if (!Strings.isNullOrEmpty(originalQuery)) {
-            query.append(escapeHtml5(originalQuery).replaceAll("&amp;", "&"));
+            query.append(StringFilterUtils.escapeHtml5(originalQuery).replaceAll("&amp;", "&"));
             log.debug("编码后，未转码的参数为={}", query.toString());
             log.debug("获取的查询参数RAW={}", uri.getRawQuery());
         }
@@ -119,7 +120,7 @@ public class XssFilter implements GlobalFilter, Ordered {
                     String bodyJson = new String(content, StandardCharsets.UTF_8);
                     log.debug("修改前请求的参数为={}", bodyJson);
 
-                    bodyJson = escapeHtml5Body(bodyJson);
+                    bodyJson = StringFilterUtils.escapeHtml5Body(bodyJson);
                     log.debug("经过XSS编码后的请求体参数为={}", bodyJson);
                     // 转成字节
                     byte[] bytes = bodyJson.getBytes();
@@ -140,31 +141,6 @@ public class XssFilter implements GlobalFilter, Ordered {
             }
         };
         return chain.filter(exchange.mutate().request(serverHttpRequestDecorator).build());
-    }
-
-    /**
-     * <br>
-     * 对XSS进行编码
-     * 
-     * @param value 对GET请求参数进行XSS编码
-     * @return
-     */
-    private static String escapeHtml5(String value) {
-        return Strings.isNullOrEmpty(value) ? value : StringEscapeUtils.escapeHtml4(value.trim());
-    }
-
-    /**
-     * <br>
-     * 对POST、PUT的请求参数进行XSS编码 直接使用StringEscapeUtils.escapeHtml4()的话，<br>
-     * <br>
-     * 会把Json字符串的双引号也过滤掉，导致Json后续处理解析失败<br>
-     * 
-     * @param value body Json字符串
-     * @return
-     */
-    private static String escapeHtml5Body(String value) {
-        // JSON数据的话，将引号进行还原
-        return escapeHtml5(value).replaceAll("&quot;", "\"");
     }
 
 }
